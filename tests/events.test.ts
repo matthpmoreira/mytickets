@@ -58,3 +58,40 @@ describe("GET /events/:id", () => {
     expect(status).toEqual(httpStatus.NOT_FOUND);
   });
 });
+
+describe("POST /events", () => {
+  it("should create a event", async () => {
+    const event = EventFactory();
+    const { status, body } = await api.post("/events").send(event);
+    const { id, ...response } = body;
+
+    expect(status).toEqual(httpStatus.CREATED);
+    expect(response).toEqual(event);
+  });
+
+  it("should fail if a field is invalid", async () => {
+    const events = [EventFactory({ name: "" }), EventFactory({ date: null })];
+
+    const status = await Promise.all(
+      events.map((event) =>
+        api
+          .post("/events")
+          .send(event)
+          .then((res) => res.status),
+      ),
+    );
+
+    expect(status).toEqual(
+      expect.arrayContaining([httpStatus.UNPROCESSABLE_ENTITY]),
+    );
+  });
+
+  it("should fail if already registered", async () => {
+    const event = EventFactory();
+    await prisma.event.create({ data: event });
+
+    const { status } = await api.post("/events").send(event);
+
+    expect(status).toEqual(httpStatus.CONFLICT);
+  });
+});

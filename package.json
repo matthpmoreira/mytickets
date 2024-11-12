@@ -7,7 +7,10 @@
     "build": "tsc",
     "start": "npm run migration:run && npm run seed && node dist/src/index.js",
     "dev": "ts-node-dev src/index.ts",
-    "migration:run": "prisma migrate deploy"
+    "migration:run": "prisma migrate deploy",
+    "migration:test": "dotenv -e .env.tests -- prisma migrate dev",
+    "test": "dotenv -e .env.tests -- jest --runInBand",
+    "test:coverage": "dotenv -e .env.tests -- jest --runInBand --coverage"
   },
   "keywords": [],
   "author": "",

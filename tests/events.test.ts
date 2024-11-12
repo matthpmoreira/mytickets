@@ -134,3 +134,24 @@ describe("PUT /events/:id", () => {
     expect(status).toEqual(httpStatus.NOT_FOUND);
   });
 });
+
+describe("DELETE /events/:id", () => {
+  it("should delete an event", async () => {
+    const event = EventFactory();
+    const { id } = await prisma.event.create({ data: event });
+    const { status } = await api.delete("/events/" + id);
+
+    expect(status).toEqual(httpStatus.NO_CONTENT);
+    expect(await prisma.event.findUnique({ where: { id } })).toEqual(null);
+  });
+
+  it("should fail if ID is invalid", async () => {
+    const { status } = await api.delete("/events/0");
+    expect(status).toEqual(httpStatus.BAD_REQUEST);
+  });
+
+  it("should fail if event does not exist", async () => {
+    const { status } = await api.delete("/events/1");
+    expect(status).toEqual(httpStatus.NOT_FOUND);
+  });
+});

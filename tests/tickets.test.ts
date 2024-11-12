@@ -101,3 +101,44 @@ describe("POST /tickets", () => {
     expect(status).toEqual(httpStatus.NOT_FOUND);
   });
 });
+
+describe("PUT /events/use/:id", () => {
+  it("should set a ticket as used", async () => {
+    const { id: eventId } = await prisma.event.create({ data: EventFactory() });
+    const ticket = TicketFactory({ eventId });
+    const { id } = await prisma.ticket.create({ data: ticket });
+
+    const { status } = await api.put("/tickets/use/" + id).send();
+    const dbEntry = await prisma.ticket.findUnique({ where: { id } });
+
+    expect(status).toEqual(httpStatus.NO_CONTENT);
+    expect(dbEntry.used).toEqual(true);
+  });
+
+  it("should fail if ID is invalid", async () => {
+    const { status } = await api.put("/tickets/use/0").send();
+    expect(status).toEqual(httpStatus.BAD_REQUEST);
+  });
+
+  it("should fail if event is expired", async () => {
+    const event = EventFactory({ date: faker.date.past() });
+    const { id: eventId } = await prisma.event.create({ data: event });
+    const ticket = TicketFactory({ eventId });
+    const { id } = await prisma.ticket.create({ data: ticket });
+
+    const { status } = await api.put("/tickets/use/" + id).send();
+
+    expect(status).toEqual(httpStatus.FORBIDDEN);
+  });
+
+  it("should fail if ticket is used", async () => {
+    const { id: eventId } = await prisma.event.create({ data: EventFactory() });
+    const ticket = TicketFactory({ eventId });
+    const { id } = await prisma.ticket.create({ data: ticket });
+    await prisma.ticket.update({ data: { used: true }, where: { id } });
+
+    const { status } = await api.put("/tickets/use/" + id).send();
+
+    expect(status).toEqual(httpStatus.FORBIDDEN);
+  });
+});

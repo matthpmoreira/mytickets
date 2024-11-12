@@ -95,3 +95,42 @@ describe("POST /events", () => {
     expect(status).toEqual(httpStatus.CONFLICT);
   });
 });
+
+describe("PUT /events/:id", () => {
+  it("should edit an event", async () => {
+    const event = EventFactory();
+    const edited = EventFactory();
+    const { id } = await prisma.event.create({ data: event });
+
+    const { status, body } = await api.put("/events/" + id).send(edited);
+
+    expect(status).toEqual(httpStatus.OK);
+    expect(body).toEqual({ id, ...edited });
+  });
+
+  it("should fail if already registered", async () => {
+    const events = [EventFactory(), EventFactory()];
+    const created = await Promise.all(
+      events.map((data) => prisma.event.create({ data })),
+    );
+    const { id, ...edited } = created[1];
+
+    const { status } = await api.put("/events/" + created[0].id).send(edited);
+
+    expect(status).toEqual(httpStatus.CONFLICT);
+  });
+
+  it("should fail if ID is invalid", async () => {
+    const event = EventFactory();
+    const { status } = await api.put("/events/0").send(event);
+
+    expect(status).toEqual(httpStatus.BAD_REQUEST);
+  });
+
+  it("should fail if event does not exist", async () => {
+    const event = EventFactory();
+    const { status } = await api.get("/events/1").send(event);
+
+    expect(status).toEqual(httpStatus.NOT_FOUND);
+  });
+});
